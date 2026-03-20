@@ -1,0 +1,6 @@
+TenantID,FirstName,LastName,Email,Phone,PropertyID,LeaseStartDate,LeaseEndDate
+1,James,Thompson,james.thompson@email.com,07700900001,1,2023-01-01,2025-12-31
+2,Sarah,Patel,sarah.patel@email.com,07700900002,2,2023-03-01,2025-02-28
+3,Michael,Roberts,michael.roberts@email.com,07700900003,4,2023-06-01,2025-05-31
+4,Emma,Williams,emma.williams@email.com,07700900004,5,2022-09-01,2025-08-31
+5,David,Khan,david.khan@email.com,07700900005,7,2024-01-01,2025-12-31

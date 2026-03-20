@@ -1,0 +1,73 @@
+-- ============================================================
+-- 05_etl_logging.sql
+-- Audit/logging tables for ETL pipeline monitoring
+-- ============================================================
+
+USE PropertyETL;
+GO
+
+-- -------------------------------------------------------
+-- etl.PipelineLog — one row per pipeline execution
+-- -------------------------------------------------------
+CREATE TABLE etl.PipelineLog (
+    LogID           INT             IDENTITY(1,1) PRIMARY KEY,
+    BatchID         UNIQUEIDENTIFIER NOT NULL,
+    PipelineName    NVARCHAR(200)   NOT NULL,
+    StartTime       DATETIME2       NOT NULL DEFAULT GETDATE(),
+    EndTime         DATETIME2,
+    Status          NVARCHAR(20)    NOT NULL DEFAULT 'RUNNING',  -- RUNNING, SUCCESS, FAILED
+    RowsExtracted   INT             DEFAULT 0,
+    RowsLoaded      INT             DEFAULT 0,
+    RowsRejected    INT             DEFAULT 0,
+    ErrorMessage    NVARCHAR(MAX),
+    ExecutedBy      NVARCHAR(200)   DEFAULT SYSTEM_USER
+);
+GO
+
+-- -------------------------------------------------------
+-- etl.RejectedRows — detail of every rejected record
+-- -------------------------------------------------------
+CREATE TABLE etl.RejectedRows (
+    RejectionID     INT             IDENTITY(1,1) PRIMARY KEY,
+    BatchID         UNIQUEIDENTIFIER NOT NULL,
+    TableName       NVARCHAR(200)   NOT NULL,
+    SourceRow       NVARCHAR(MAX),   -- JSON serialised original row
+    RejectionReason NVARCHAR(500),
+    RejectedAt      DATETIME2       NOT NULL DEFAULT GETDATE()
+);
+GO
+
+-- -------------------------------------------------------
+-- Helper procedure to open/close a log entry
+-- -------------------------------------------------------
+CREATE OR ALTER PROCEDURE etl.usp_StartPipelineLog
+    @BatchID        UNIQUEIDENTIFIER,
+    @PipelineName   NVARCHAR(200)
+AS
+BEGIN
+    INSERT INTO etl.PipelineLog (BatchID, PipelineName, Status)
+    VALUES (@BatchID, @PipelineName, 'RUNNING');
+END;
+GO
+
+CREATE OR ALTER PROCEDURE etl.usp_EndPipelineLog
+    @BatchID        UNIQUEIDENTIFIER,
+    @Status         NVARCHAR(20),
+    @RowsExtracted  INT = 0,
+    @RowsLoaded     INT = 0,
+    @RowsRejected   INT = 0,
+    @ErrorMessage   NVARCHAR(MAX) = NULL
+AS
+BEGIN
+    UPDATE etl.PipelineLog
+    SET EndTime       = GETDATE(),
+        Status        = @Status,
+        RowsExtracted = @RowsExtracted,
+        RowsLoaded    = @RowsLoaded,
+        RowsRejected  = @RowsRejected,
+        ErrorMessage  = @ErrorMessage
+    WHERE BatchID = @BatchID;
+END;
+GO
+
+PRINT 'ETL logging objects created.';
